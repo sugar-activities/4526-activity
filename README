@@ -1,0 +1,17 @@
+Source for Kuku Anakula
+
+Based off of the idea behind Number Munchers
+
+The idea is that a chicken moves within a grid.  Each square
+of the grid contains answers to a problem posed as an image
+outside of the grid.  The player moves around the grid and 
+eats the correct answers.
+
+Typical questions and answers can be simple arithmetic problems,
+vocabulary, etc.
+
+AUTHORS:
+Julius B. Lucks 
+   julius@younglucks.com, Lucks on irc.freenode.net (#sugar,#olpc-content)
+Adrian DelMaestro
+Sera L. Young
