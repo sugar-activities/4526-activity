@@ -40,7 +40,7 @@ class Grid(object):
         
         #create tiles
         self.tiles = []
-        rects = []
+        #rects = []
         
         
         self.tiles = [Tile(x,y,tile_size_x,tile_size_y,grid_offset, scale_x) 
@@ -51,27 +51,27 @@ class Grid(object):
         self.step_height = self.tiles[0].height
         self.rect = pygame.Rect(0,0,0,0)
         self.rect = self.rect.unionall([t.get_rect() for t in self.tiles])
-        self.center_position = (dimensions[0]/2,dimensions[1]/2)
+        self.center_position =(int(dimensions[0]/2),int(dimensions[1]/2))
     
     
     def get_tile(self,x,y):
         """get the tile at the grid position (x,y)
-        
         raise an IndexError if not in grid.
         """
         if self.check_bounds(x,y):
             ind = self.dimensions[1]*x + y
-            return self.tiles[ind]
+            # print ("X,Y tulpa:[0,1] :",x,y,self.dimensions[0],self.dimensions[1])
+            # print ('CAntidad de compo tiles',len(self.tiles)) 
+            # print (self.tiles) 
+            # print ("FIN")
+            return self.tiles[int(ind)]
         else:
             raise IndexError
     
     
     def check_bounds(self,x,y):
         """make sure grid postion (x,y) fits within the grid"""
-        if x > -1 and \
-           x < self.dimensions[0] and \
-           y > -1 and \
-           y < self.dimensions[1]:
+        if x > -1 and x < self.dimensions[0] and y > -1 and y < self.dimensions[1]:
            return True
         else:
            return False
@@ -86,7 +86,7 @@ class Grid(object):
     
     def draw_tile(self,x,y,screen):
         ind = self.dimensions[1]*x + y
-        t = self.tiles[ind]
+        t = self.tiles[int(ind)]
         dirtyrects = []
         dirtyrects.extend(t.draw(screen))
         return dirtyrects
@@ -99,4 +99,3 @@ class Grid(object):
     def get_center_position(self):
         """docstring for get_center_position"""
         return self.center_position
-

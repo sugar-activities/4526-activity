@@ -1,8 +1,8 @@
 [Activity]
 name = Kuku Anakula
-activity_version = 5
+activity_version = 6
 bundle_id = org.laptop.dev.KukuActivity
 icon = activity-kuku
-exec = sugar-activity activity.Activity
+exec = sugar-activity3 activity.Activity
 license = GPLv3+
 summary = Kuku (Hungry Chicken), is based on the basic arithmetic education game Number Munchers

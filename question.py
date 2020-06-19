@@ -311,7 +311,7 @@ class QuestionFileIO (object) :
 
         #RETURNS a list of Question objects
         try:
-            f = file(file_name,"r")
+            f = open(file_name,"r")
         except IOError:
             raise(FileError)
         
@@ -358,7 +358,7 @@ class Question (object) :
         self.a_string_raw     = a_raw
 
         (self.type,self.q_string,self.a_list) = self.Parse_question(q_raw,a_raw)
-        self.n_answers        = len(self.a_list)
+        self.n_answers = len(list(self.a_list))
     #**********
 
     def Parse_question(self,q_string,a_string) :

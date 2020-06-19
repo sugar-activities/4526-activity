@@ -22,32 +22,22 @@
 # Julius B. Lucks <julius@younglucks.com>
 # Alan Aguiar <alanjas@gmail.com>
 
-import os
 import sys
-import gtk
+import gi
+gi.require_version('Gtk', '3.0')
+from gi.repository import Gtk
 import pygame
 import random
-from pygame.locals import *
+from pygame.locals import Rect
 from grid import Grid
-import pickle as p
 import question
 import re
 
-from kuku_utils import *
-
-#import configuration
-from kuku_config import *
+from kuku_utils import data_path, load_image
+from kuku_config import GRID_SIZE, GAME_TIME
+from kuku_config import PLAYER_LIVES, QUESTION_FILES
 
 from gettext import gettext as _
-
-#i18n
-#import gettext
-#gettext.install('kuku', './locale', unicode=False)
-#presLan_en = gettext.translation("kuku", os.path.join(get_bundle_path(),'locale'), languages=['en'])
-#presLan_sw = gettext.translation("kuku", os.path.join(get_bundle_path(),'locale'), languages=['sw'])
-
-#presLan_en.install()
-# presLan_sw.install()
 
 scale_x = 1.0
 scale_y = 1.0
@@ -143,12 +133,16 @@ class State(object):
         return str
 
     def save(self):
-        """save state object
-
-        in kuku_state.obj"""
-        f = file(data_path('kuku_state.obj'),'w')
-        p.dump(self,f)
-        f.close()
+        """save state object in kuku_state.obj"""
+        try:
+            f = file(data_path('kuku_state.obj'), "w")
+            f.write(str(self.score) + "\n")
+            f.write(str(self.lives) + "\n")
+            f.write(str(self.high_score) + "\n")
+            f.write(str(self.time) + "\n")
+            f.close()
+        except Exception as err:
+            print (' Save Error saving scores', err)
 
     def update(self,lives=None,score=None,time=None):
         """update lives, score and time"""
@@ -249,7 +243,7 @@ class Player(Actor):
             self.set_image(self.img_player_left)
         elif x_direction > 0:
             self.set_image(self.img_player_right)
-            step = 1
+            #step = 1
         #elif y_direction != 0:
             #self.set_image(Img.player_right)
 
@@ -558,6 +552,7 @@ class Lives(object):
 class KukuActivity():
 
     def __init__(self, running_sugar=True):
+
         self.running_sugar = running_sugar
         #Initialize questions - need to do lazy loading to speed up game init
         self.question_lists = []
@@ -567,7 +562,7 @@ class KukuActivity():
                 #print question_file
                 question_list = qfIO.Read_questions(data_path(question_file))
             except question.ParseError:
-                print 'Problem parsing file, using random questions.'
+                print ('Problem parsing file, using random questions.')
                 qs = []
                 for j in range(100):
                     q = (random.randint(0,9),
@@ -592,8 +587,8 @@ class KukuActivity():
         pygame.display.update()
         while True:
             # Pump GTK messages.
-            while gtk.events_pending():
-                gtk.main_iteration()
+            while Gtk.events_pending():
+                Gtk.main_iteration()
             events = pygame.event.get()
             for evt in events:
                 if evt.type == pygame.QUIT:
@@ -602,7 +597,7 @@ class KukuActivity():
                     qa,num_players,score,time_clock = self.game_start(screen,gridsize,font)
                     return (qa,num_players,score,time_clock)
 
-    def game_win(self, screen, gridsize, font, state):
+    def game_win(self, screen, gridsize, font):
         """the game over screen"""
         screen.fill((255,255,255))
         vec = (screen.get_rect().center[0]-self.Img.game_win.get_rect().center[0],
@@ -615,15 +610,15 @@ class KukuActivity():
         # print 'win!!', state
         while True:
             # Pump GTK messages.
-            while gtk.events_pending():
-                gtk.main_iteration()
+            while Gtk.events_pending():
+                Gtk.main_iteration()
             events = pygame.event.get()
             for evt in events:
                 if evt.type == pygame.QUIT:
                     sys.exit(0)
                 elif evt.type == pygame.KEYDOWN:
                     qa,num_players,score,time_clock = self.game_start(screen,gridsize,font,started=1)
-                    score.set(state.score)
+                    score.set(self.state.score)
                     return (qa,num_players,score,time_clock)
 
 
@@ -645,7 +640,7 @@ class KukuActivity():
             message = _('Begin!')
             text = font.render(message,1,(10,10,10))
             twidth = text.get_rect().width
-            theight = text.get_rect().height
+            #theight = text.get_rect().height
             tlcorner = screen.get_rect().center
             textpos = (tlcorner[0]-twidth/2, tlcorner[1])
 
@@ -654,8 +649,8 @@ class KukuActivity():
 
             while True:
                 # Pump GTK messages.
-                while gtk.events_pending():
-                    gtk.main_iteration()
+                while Gtk.events_pending():
+                    Gtk.main_iteration()
                 events = pygame.event.get()
                 for evt in events:
                     if evt.type == pygame.QUIT:
@@ -703,6 +698,28 @@ class KukuActivity():
         screen.fill((255,255,255))
         pygame.display.update()
         return (qa,num_players,score,time_clock)
+
+    def save_state(self, PLAYER_LIVES, GAME_TIME):
+        print ('Saving state...')
+        #self.state.score = 0
+        self.state.lives = PLAYER_LIVES
+        self.state.time  = GAME_TIME
+        self.state.save()
+        print ('State saved')
+
+
+    def load_state(self):
+        self.state = State()
+        try:
+            f = open(data_path('kuku_state.obj'),'r')
+            self.state.score = int(f.readline())
+            self.state.lives = int(f.readline())
+            self.state.high_score = int(f.readline())
+            self.state.time = int(f.readline())
+            f.close()
+        except Exception as err:
+            print ('LOADCannot open kuku_state.obj', err)
+
 
     def run(self):
         """main pygame loop"""
@@ -766,14 +783,7 @@ class KukuActivity():
         pygame.display.flip()
            
 
-        #load the state object if it exists
-        try:
-            f = file(data_path('kuku_state.obj'),'r')
-            state = p.load(f)
-            f.close()
-        except IOError:
-            state = State()
-
+        self.load_state()
 
         # # Start music
         # pygame.mixer.music.load(data_path('kuku_slow.ogg'))
@@ -797,7 +807,7 @@ class KukuActivity():
 
         
         #create high_score
-        high_score = HighScore(state.high_score,self.Img.high_score,screen,font)
+        high_score = HighScore(self.state.high_score,self.Img.high_score,screen,font)
 
 
         # print Img.player_right.get_rect().height, Img.stunned_right.get_rect().height
@@ -819,8 +829,8 @@ class KukuActivity():
 
         while running:
             # Pump GTK messages.
-            while gtk.events_pending():
-                gtk.main_iteration()
+            while Gtk.events_pending():
+                Gtk.main_iteration()
             delta = clock.tick(25)
             time += delta
             if time > 1000:
@@ -833,25 +843,27 @@ class KukuActivity():
                                                        font,
                                                        num_players=num_players,
                                                        score=score)
-                    state.update(lives=num_players.get_lives(),
+                    self.state.update(lives=num_players.get_lives(),
                                  score=score.get_score(),
                                  time =time_clock.get_ticks())
-                    high_score.set(state.high_score)
+                    high_score.set(self.state.high_score)
 
             events = pygame.event.get()
             for evt in events:
                 if evt.type == pygame.QUIT:
-                    sys.exit(0)
+                    self.save_state(PLAYER_LIVES, GAME_TIME)
+                    running = False
+                    #sys.exit(0)
                 elif evt.type == pygame.KEYDOWN:
                     if evt.key == 27:
                         if not(self.running_sugar):
                             running = False
-                            exit()
+                            sys.exit(0)
                     # elif evt.key == pygame.K_SPACE:
                     if not evt.key in move_keys:
                         x = player.grid_position[0]
                         y = player.grid_position[1]
-                        ctile = grid.draw_tile(x,y,screen)
+                        grid.draw_tile(x,y,screen)
 
                         #Pecking animation - 1st erase player,
                         #then set pecking image, then only update
@@ -881,10 +893,10 @@ class KukuActivity():
                                                                num_players=num_players,
                                                                score=score,
                                                                time_clock=time_clock)
-                            state.update(lives=num_players.get_lives(),
+                            self.state.update(lives=num_players.get_lives(),
                                          score=score.get_score(),
                                          time =time_clock.get_ticks())
-                            high_score.set(state.high_score)
+                            high_score.set(self.state.high_score)
 
 
                         else:
@@ -894,9 +906,9 @@ class KukuActivity():
                             time = 0
 
                             #probably right here
-                            state.update(lives=num_players.get_lives(),
+                            self.state.update(lives=num_players.get_lives(),
                                          time =time_clock.get_ticks())
-                            high_score.set(state.high_score)
+                            high_score.set(self.state.high_score)
 
 
 
@@ -929,23 +941,23 @@ class KukuActivity():
                 pygame.mixer.music.fadeout(2000)
                 kuku_lose.play()
                 qa,num_players,score,time_clock = self.game_over(screen,gridsize,font)
-                state.update(lives=num_players.get_lives(),
+                self.state.update(lives=num_players.get_lives(),
                              score=score.get_score(),
                              time =time_clock.get_ticks())
-                high_score.set(state.high_score)
+                high_score.set(self.state.high_score)
 
 
 
-            if state.won:
+            if self.state.won:
                 pygame.mixer.music.fadeout(2000)
                 kuku_win.play()
                 pygame.mixer.music
-                qa,num_players,score,time_clock = self.game_win(screen,gridsize,font,state)
-                state.update(lives=num_players.get_lives(),
+                qa,num_players,score,time_clock = self.game_win(screen,gridsize,font)
+                self.state.update(lives=num_players.get_lives(),
                              score=score.get_score(),
                              time =time_clock.get_ticks())
-                state.won = 0
-                high_score.set(state.high_score)
+                self.state.won = 0
+                high_score.set(self.state.high_score)
 
 
             # determine which direction the actor is facing
@@ -992,13 +1004,17 @@ class KukuActivity():
             pygame.display.update(dirtyrects)
             dirtyrects = []
 
+# def main():
+#     pygame.init()
+#     pygame.display.set_mode((0, 0), pygame.RESIZABLE)
+#     k = KukuActivity(False)
+#     k.run()
 
-        state.score = 0
-        state.lives = PLAYER_LIVES
-        state.time  = GAME_TIME
-        state.save()
-
+# if __name__ == '__main__':
+#     main()
 if __name__ == '__main__':
+    pygame.init()
+    pygame.display.set_mode((0, 0), pygame.RESIZABLE)
     k = KukuActivity(False)
     k.run()
 
